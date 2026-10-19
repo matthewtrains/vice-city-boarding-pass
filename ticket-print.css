@@ -1,0 +1,1 @@
+.print-options{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:18px}.print-options label{flex:1;min-width:180px;max-width:300px}.print-options p{font-size:10px;flex:1;min-width:180px;margin:0}.actions #printActive{background:#efbed1;color:#301b2a}@media(max-width:480px){.print-options label{max-width:none;width:100%}}
