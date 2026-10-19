@@ -1,36 +1,33 @@
 # Vice City Boarding Pass Generator
 
-Create fictional Los Santos to Vice City boarding passes in your browser.
+Fictional Los Santos to Vice City boarding passes, generated locally in the browser.
 
-Idea and original ticket design credited to [Vinewood Motors (@Vinewood_motors)](https://x.com/Vinewood_motors). The Original option is a recreation of the reference layout, not an endorsement or claim of permission.
+Original concept and ticket design: [Vinewood Motors (@Vinewood_motors)](https://x.com/Vinewood_motors).
 
-Unofficial fan project. Not affiliated with Rockstar Games or Take-Two Interactive. Game names and branding belong to their respective owners.
+Unofficial fan project. Not affiliated with Rockstar Games or Take-Two Interactive.
 
 ## Layouts
-- Ocean Drive: panoramic coastal artwork with a cream boarding panel.
-- Remix: left stub, stacked route and detail cards.
-- Portrait pass: a phone-friendly vertical ticket.
-- Social card: a square ticket.
-- Original: recreation of the reference layout credited to Vinewood Motors.
+Original, Remix, Portrait, Social, and Ocean Drive. Click a thumbnail or use the layout selector. The original four rendering functions are preserved from the supplied source.
 
-## Features
-- Airport autocomplete, cabin palettes and fictional edition presets.
-- Random seat, gate, flight and reference numbers.
-- Seat diagram, optional arrival stamp and animated arrivals board.
-- Canvas PNG downloads and phone, desktop and 4K wallpapers.
-- Tear-off animation completes before the export preview scrolls into view.
-- Generic sample passenger; no prefilled connecting airport.
+## Controls
+- Passenger name and connecting airport start blank.
+- Arrival stamp is off by default.
+- Ticket PNG resolution: 1x, 2x, 3x, or 4x, with exact pixel dimensions shown for each layout.
+- Paper-rip sound on ticket download, with an on/off toggle. Audio is synthesized locally.
+- Wallpaper size is selected separately from ticket PNG resolution.
 
 ## Files
 - index.html: page markup.
-- style.css: responsive sunset terminal styling.
-- app.js: ticket rendering, background, controls and exports.
+- style.css: page and thumbnail styles.
+- ticket-core.js: original settings, data, and drawing helpers.
+- ticket-layouts.js: original four layout functions.
+- app.js: ticket generation, Ocean Drive, thumbnail controls, exports, and sound.
 
 ## Run
-Open index.html in a modern browser while online. Google Fonts and the QR library load from external CDNs. Tickets are generated locally; there is no server-side storage or tickets folder.
+Open index.html in a modern browser while online. Google Fonts and the QR library load from external CDNs. No server-side ticket storage is used.
 
-## GitHub Pages
-In Settings → Pages, choose Deploy from a branch, main, / (root). The expected project URL is https://matthewtrains.github.io/vice-city-boarding-pass/ once publishing is enabled and deployment completes.
+## Publishing
+In repository Settings > Pages, select deployment from main and the repository root. Use the published URL shown after deployment completes.
 
 ## Arrival setting
-RELEASE and ARRIVAL are near the top of app.js. The midnight-local arrival is a visual placeholder, not a verified unlock time. Edition presets and travel details are fictional.
+RELEASE is in ticket-core.js. Midnight is a visual placeholder, not a verified unlock time. Travel details and edition perks are fictional.

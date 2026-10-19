@@ -1,46 +1,236 @@
-'use strict';
-const $=id=>document.getElementById(id);
-const THEMES={ECONOMY:['#ee8ac4','#9a80e0','#262d57','#bd2c7d'],BUSINESS:['#4fc3d9','#6a6ad8','#10304a','#0b7686'],FIRST:['#e0a04a','#dc6b9a','#3a2314','#a86a0e']};
-const CAB={ECONOMY:[13,38,'ABCDEF'],BUSINESS:[5,12,'ACDF'],FIRST:[1,4,'ACDF']};
-const LABEL={ECONOMY:'ECONOMY',BUSINESS:'BUSINESS',FIRST:'FIRST CLASS'};
-const EDITIONS={STANDARD:['ECONOMY',''],SPECIAL:['BUSINESS','SPECIAL EDITION'],COLLECTOR:['FIRST',"COLLECTOR'S EDITION"]};
-const RELEASE=new Date('2026-11-19T00:00:00'); // Midnight is a visual placeholder, not a verified unlock time.
-const ARRIVAL='19 NOV 2026 · 00:00';
-const AIRPORTS='ATL|Atlanta;LAX|Los Angeles;ORD|Chicago O’Hare;DFW|Dallas/Fort Worth;DEN|Denver;JFK|New York JFK;SFO|San Francisco;SEA|Seattle;LAS|Las Vegas;MCO|Orlando;EWR|Newark;CLT|Charlotte;PHX|Phoenix;IAH|Houston Intercontinental;MIA|Miami;BOS|Boston;MSP|Minneapolis;FLL|Fort Lauderdale;DTW|Detroit;PHL|Philadelphia;LGA|New York LaGuardia;BWI|Baltimore;SLC|Salt Lake City;SAN|San Diego;IAD|Washington Dulles;DCA|Washington Reagan;MDW|Chicago Midway;TPA|Tampa;HNL|Honolulu;PDX|Portland;AUS|Austin;BNA|Nashville;STL|St. Louis;MCI|Kansas City;RDU|Raleigh-Durham;PIT|Pittsburgh;CLE|Cleveland;CMH|Columbus;CVG|Cincinnati;IND|Indianapolis;SJC|San Jose;OAK|Oakland;SMF|Sacramento;MSY|New Orleans;SAT|San Antonio;SNA|Orange County;DAL|Dallas Love Field;HOU|Houston Hobby;ANC|Anchorage;MKE|Milwaukee;JAX|Jacksonville;RSW|Fort Myers;BDL|Hartford;CHS|Charleston'.split(';').map(s=>s.split('|')).sort((a,b)=>a[1].localeCompare(b[1]));
-AIRPORTS.forEach(([code,city])=>{const o=document.createElement('option');o.value=city+' ('+code+')';$('airports').append(o)});
-const D={ocean:[1200,460,64,0],remix:[1000,420,23,0],original:[1000,410,70,0],tall:[520,1100,60,1],square:[640,640,75,1]};
-let S=null,busy=false,url=null,epoch=0;
-function random(n){return()=>{n|=0;n=n+0x6D2B79F5|0;let t=Math.imul(n^n>>>15,1|n);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function rect(c,x,y,w,h,col,r=12){c.fillStyle=col;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
-function tx(c,s,x,y,size,col,max=999,weight=700,font='Oswald'){c.save();c.textBaseline='alphabetic';c.fillStyle=col;let z=size;while(z>9){c.font=`${weight} ${z}px ${font},Arial,sans-serif`;if(c.measureText(s).width<=max)break;z--}c.fillText(s,x,y);c.restore()}
-function palm(c,x,y,s,col,alpha=1){c.save();c.translate(x,y);c.scale(s,s);c.globalAlpha=alpha;c.strokeStyle=col;c.lineCap='round';c.lineWidth=7;c.stroke(new Path2D('M0 0 C4 -60 2 -110 10 -170'));c.lineWidth=5;['M10 -170 C-30 -190 -60 -170 -80 -140','M10 -170 C-20 -205 -50 -205 -75 -190','M10 -170 C50 -195 85 -175 100 -140','M10 -170 C40 -210 75 -210 95 -190','M10 -170 C10 -205 15 -225 5 -245'].forEach(p=>c.stroke(new Path2D(p)));c.restore()}
-function plane(c,x,y,s=1,rot=0,col='#333'){c.save();c.translate(x,y);c.scale(s,s);c.rotate(rot);c.fillStyle=col;c.fill(new Path2D('M30 0Q34 5 24 5L5 5 -9 25 -18 25 -5 5 -23 5 -31 12 -36 12 -30 0 -36 -12 -31 -12 -23 -5 -5 -5 -18 -25 -9 -25 5 -5 24 -5Q34 -5 30 0'));c.restore()}
-function scene(c,w,h,T,n){let g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,T[1]);g.addColorStop(.55,T[0]);g.addColorStop(1,'#efb4a4');c.fillStyle=g;c.fillRect(0,0,w,h);g=c.createRadialGradient(w*.72,h*.3,0,w*.72,h*.3,Math.max(w,h)*.6);g.addColorStop(0,'#ffe8bcdd');g.addColorStop(1,'#ffe8bc00');c.fillStyle=g;c.fillRect(0,0,w,h);const r=random(n);c.save();c.globalAlpha=.16;c.fillStyle=T[2];for(let x=0;x<w;){let bw=20+r()*w*.07,bh=h*(.08+r()*.2);c.fillRect(x,h*.8-bh,bw,h);x+=bw+4}for(let i=0;i<4;i++){const x=w*(.05+i*.24),y=h*(.2+r()*.25);c.beginPath();c.moveTo(x,h);c.lineTo(x,y+15);c.lineTo(x+w*.13,y);c.lineTo(x+w*.13,h);c.fill();c.strokeStyle=T[2];c.lineWidth=2;for(let yy=y;yy<h;yy+=30){c.beginPath();c.moveTo(x-8,yy);c.lineTo(x-30,yy+30);c.moveTo(x-30,yy);c.lineTo(x-8,yy+30);c.stroke()}}c.restore();const ps=Math.min(w/600,h/420);palm(c,w*.03,h*1.04,ps*1.4,T[2],.32);palm(c,w*.97,h*1.04,ps*1.8,T[2],.36);palm(c,w*.56,h*1.05,ps*.7,T[2],.22)}
-function qr(c,x,y,w){rect(c,x,y,w,w,'#fff');if(!S.qr)return;const N=S.qr.getModuleCount(),a=Math.floor(w/(N+8)),off=(w-N*a)/2;c.fillStyle='#191526';for(let i=0;i<N;i++)for(let j=0;j<N;j++)if(S.qr.isDark(i,j))c.fillRect(x+off+j*a,y+off+i*a,a,a)}
-function bars(c,x,y,w,h){const r=random(S.n);c.fillStyle=S.T[2];for(let p=0;p<w;){const b=1+Math.floor(r()*3);c.fillRect(x+p,y,Math.min(b,w-p),h);p+=b+1+Math.floor(r()*2)}}
-function map(c,x,y){const n=S.layout.length;rect(c,x,y,n*13+16,44,'#ffffffb8',7);for(let r=0;r<3;r++)for(let j=0;j<n;j++)rect(c,x+4+j*13+(j>=n/2?7:0),y+4+r*12,9,9,r===1&&S.layout[j]===S.L?S.T[3]:'#9e959b',2)}
-function stamp(c,x,y,w=100){if(!S.stamp)return;c.save();c.translate(x+w/2,y+w/2);c.rotate(-.24);c.globalAlpha=.85;c.strokeStyle=S.T[3];c.lineWidth=2;[.46,.4].forEach(r=>{c.beginPath();c.arc(0,0,w*r,0,Math.PI*2);c.stroke()});tx(c,'VICE CITY',-w*.27,-w*.17,w*.15,S.T[3],w*.6);tx(c,'ARRIVED',-w*.3,w*.07,w*.2,S.T[3],w*.65);tx(c,'19 NOV 2026',-w*.3,w*.26,w*.1,S.T[3],w*.65);c.restore()}
-function chip(c,l,v,x,y,w,h,size=25){rect(c,x,y,w,h,'#fffffff0');rect(c,x+8,y+10,4,h-20,S.T[3],2);tx(c,l,x+22,y+20,10,S.T[3],w-32,500);tx(c,v,x+22,y+h-12,size,S.T[2],w-34)}
-function count(){const d=Math.ceil((RELEASE-Date.now())/86400000);return d>0?'T-'+d+' DAYS':'LANDED'}
-function badge(c,x,y,w=220){if(!S.badge)return;rect(c,x,y,w,26,S.T[3],13);tx(c,S.badge,x+12,y+19,14,'#fff',w-24)}
-function ocean(c){const T=S.T;scene(c,1200,460,T,S.n);tx(c,'flyUS',34,57,36,'#fff');tx(c,'OCEAN DRIVE / BOARDING COLLECTION',34,86,12,T[2],600);tx(c,'VICE',32,191,112,T[2]);tx(c,'CITY',32,300,112,T[2]);rect(c,34,328,690,94,'#ffffffea');tx(c,'PASSENGER',54,350,11,T[3]);tx(c,S.name,54,388,32,T[2],340);tx(c,'CABIN',430,350,11,T[3]);tx(c,S.cl,430,384,23,T[2],160);tx(c,'FLIGHT',618,350,11,T[3]);tx(c,S.flight,618,384,23,T[2],90);tx(c,S.conn||'NONSTOP FROM LOS SANTOS',34,450,12,T[2],680);rect(c,768,0,432,460,'#fff8ef',0);rect(c,768,0,432,9,T[3],0);tx(c,'LSX',798,62,38,T[2]);plane(c,925,45,.55,0,T[3]);tx(c,'VCI',985,62,38,T[2]);tx(c,'LANDS',798,93,12,T[3]);tx(c,ARRIVAL,798,126,25,T[2],365);rect(c,798,145,370,40,'#eadce480');tx(c,S.badge||'SUNSET SERVICE',812,171,18,T[3],340);qr(c,798,210,144);tx(c,'SEAT',967,223,12,T[3]);tx(c,S.seat,967,267,43,T[2]);tx(c,'GATE',1081,223,12,T[3]);tx(c,String(S.gate),1081,267,43,T[2]);map(c,967,286);tx(c,count(),967,351,21,T[3]);bars(c,798,376,370,29);tx(c,S.ref+' / PAX '+S.pax,798,425,13,T[2]);tx(c,'IDEA: @VINEWOOD_MOTORS / UNOFFICIAL FAN ART',798,447,10,T[2],370,400);stamp(c,596,191,114)}
-function remix(c){const T=S.T;scene(c,1000,420,T,S.n);rect(c,0,0,230,420,T[0],0);palm(c,168,430,.95,T[2],.2);c.save();c.translate(26,350);c.rotate(-Math.PI/2);tx(c,'B O A R D I N G  P A S S',0,0,20,'#fff',300);c.restore();qr(c,62,24,144);tx(c,'SCAN AT THE GATE',64,186,12,'#fff');map(c,44,204);tx(c,'SEAT',176,211,11,'#fff');tx(c,S.seat,177,248,32,'#fff',48);tx(c,'GATE',50,284,11,'#fff');tx(c,String(S.gate),50,322,38,'#fff');tx(c,'CLASS',130,284,11,'#fff');tx(c,S.cl,130,312,17,'#fff',88);bars(c,50,340,164,26);tx(c,S.ref,57,390,12,'#fff');rect(c,230,0,430,58,T[1],0);tx(c,'flyUS ✦',254,44,38,'#fff');tx(c,'Sunset service to Vice City',412,38,17,'#fff',213);badge(c,744,16);tx(c,'DEPARTURE',264,80,11,T[3]);tx(c,'LSX',260,140,76,T[2],198,800,'Poppins');tx(c,'LOS SANTOS',264,164,20,T[2]);plane(c,300,211,.5,Math.PI/2,T[2]);rect(c,326,196,370,25,'#ffffffed');tx(c,S.conn||'NONSTOP',339,214,13,T[3],344);tx(c,'ARRIVAL',264,249,11,T[3]);tx(c,'VCI',260,306,76,T[2],198,800,'Poppins');tx(c,'VICE CITY',264,328,20,T[2]);rect(c,472,70,224,108,'#ffffffdf');tx(c,'LANDS',490,92,11,T[3]);tx(c,'19 NOV',490,140,44,T[2],188,800,'Poppins');tx(c,'2026 · 00:00',490,168,22,T[2]);rect(c,712,70,256,108,'#ffffffdf');tx(c,'YOUR SEAT',730,92,11,T[3]);tx(c,S.seat,730,140,44,T[2],114,800,'Poppins');map(c,866,98);tx(c,S.sinfo,730,166,12,T[2],224,500);rect(c,472,238,110,26,'#ffffffed');tx(c,count(),484,257,14,T[3]);stamp(c,738,206,114);chip(c,'PASSENGER',S.name,262,338,236,56,22);chip(c,'FLIGHT',S.flight,510,338,130,56,22);chip(c,'CLASS',S.cl,652,338,150,56,20);chip(c,'PAX №',S.pax,814,338,146,56,22);tx(c,'Gate agents are not liable for launch-week sleep loss.',262,413,11,'#fff');tx(c,'IDEA BY @VINEWOOD_MOTORS · UNOFFICIAL',710,413,9,'#fff',260,400)}
-function original(c){const T=S.T;scene(c,1000,410,T,S.n);rect(c,7,7,663,75,T[0],20);rect(c,720,7,273,68,T[1],20);palm(c,580,158,.5,T[2],.25);tx(c,'flyUS ✦',40,61,48,'#fff');tx(c,'Next stop: Vice City',236,55,28,'#fff');tx(c,'BOARDING PASS',740,55,31,'#fff',240);tx(c,S.conn,67,122,16,T[2],350);tx(c,'PASSENGER #'+S.pax,460,122,24,T[3],206);tx(c,'DEPARTURE',67,156,21,T[2]);tx(c,'ARRIVAL',390,156,21,T[2]);tx(c,'LSX',67,237,80,T[2],190,800,'Poppins');plane(c,306,205,.7,0,T[2]);tx(c,'VCI',390,237,80,T[2],190,800,'Poppins');tx(c,'LOS SANTOS',67,275,27,T[2]);tx(c,'VICE CITY',390,275,27,T[2]);tx(c,ARRIVAL,390,300,19,T[2]);chip(c,'PASSENGER',S.name,50,314,215,54,22);chip(c,'FLIGHT',S.flight,270,314,90,54,22);chip(c,'SEAT',S.seat,365,314,65,54,22);chip(c,'GATE',String(S.gate),435,314,55,54,22);chip(c,'CLASS',S.cl,495,314,105,54,19);qr(c,611,314,54);tx(c,'FlyUS will not be held responsible for any delays (even 13-year ones).',50,391,13,'#fff',615);tx(c,'LSX → VCI',735,142,48,T[2],245,800,'Poppins');tx(c,ARRIVAL,735,177,15,T[2]);rect(c,735,199,244,115,'#fffffff0',0);tx(c,'PASSENGER',747,220,12,T[2]);tx(c,S.name,747,249,26,T[2],220);tx(c,'REF: '+S.ref,747,270,13,T[2]);tx(c,S.seat+' / '+S.gate+' / '+S.cl,747,300,21,T[2],220);bars(c,735,330,244,35);tx(c,S.ref,790,389,13,T[2]);c.save();c.setLineDash([14,10]);c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.moveTo(698,7);c.lineTo(698,403);c.stroke();c.restore()}
-function social(c){const T=S.T;scene(c,640,640,T,S.n);tx(c,'flyUS ✦',30,55,32,'#fff');badge(c,375,28,230);tx(c,'LSX',30,219,100,T[2],240,800,'Poppins');plane(c,319,184,.7,0,T[2]);tx(c,'VCI',410,219,100,T[2],207,800,'Poppins');tx(c,'LOS SANTOS',36,255,22,T[2]);tx(c,'VICE CITY',435,255,22,T[2]);rect(c,28,285,584,73,'#ffffffeb');tx(c,'LANDS / '+ARRIVAL,46,328,26,T[2],548);tx(c,S.conn||'NONSTOP',30,389,16,T[2],575);tx(c,S.name,30,445,34,T[2],570);rect(c,0,480,640,160,'#fff8ef',0);qr(c,30,498,116);tx(c,S.seat+' / GATE '+S.gate,170,541,32,T[2]);tx(c,S.cl+' / '+S.flight,170,571,21,T[2]);bars(c,170,588,430,22);tx(c,'IDEA BY @VINEWOOD_MOTORS / UNOFFICIAL FAN ART',30,634,10,T[2],570,400);stamp(c,272,66,100)}
-function tall(c){const T=S.T;scene(c,520,1100,T,S.n);rect(c,70,112,380,102,T[1]);tx(c,'WELCOME TO',120,145,21,'#fff');tx(c,'VICE CITY',115,193,40,'#fff',300,800,'Poppins');rect(c,0,0,520,68,T[0],0);tx(c,'flyUS ✦',24,44,34,'#fff');badge(c,276,14,220);tx(c,'Sunset service to Vice City',24,96,15,'#fff');rect(c,12,368,496,662,'#ffffffed',24);tx(c,'DEPARTURE',36,402,11,T[3]);tx(c,'ARRIVAL',410,402,11,T[3]);tx(c,'LSX',34,482,86,T[2],180,800,'Poppins');plane(c,260,446,.55,0,T[2]);tx(c,'VCI',326,482,86,T[2],160,800,'Poppins');tx(c,'LOS SANTOS',38,510,20,T[2]);tx(c,'VICE CITY',390,510,20,T[2]);tx(c,S.conn||'NONSTOP',36,547,14,T[3],445);tx(c,'LANDS',36,606,11,T[3]);tx(c,ARRIVAL,36,636,26,T[2]);chip(c,'PASSENGER',S.name,24,682,472,66,28);chip(c,'FLIGHT',S.flight,24,760,148,66,26);chip(c,'CLASS',S.cl,184,760,172,66,24);chip(c,'GATE',String(S.gate),368,760,128,66,26);qr(c,24,840,150);rect(c,190,840,306,150,'#ffffffeb');tx(c,'YOUR SEAT',210,868,11,T[3]);tx(c,S.seat,208,930,58,T[2],155,800,'Poppins');map(c,390,880);tx(c,S.sinfo,210,958,13,T[2],270,500);tx(c,'PAX № '+S.pax,210,980,15,T[2]);bars(c,24,1000,330,20);tx(c,S.ref,370,1016,12,T[2]);stamp(c,372,262,118);tx(c,'IDEA BY @VINEWOOD_MOTORS · UNOFFICIAL FAN ART',30,1076,11,'#fff',465,500)}
-function countdown(){return count()}
-async function fonts(){if(document.fonts)await Promise.all(['700 16px Oswald','500 16px Oswald','800 16px Poppins'].map(f=>document.fonts.load(f)))}
-function draw(c,key){const d=D[key];c.save();c.beginPath();c.roundRect(0,0,d[0],d[1],20);c.clip();({ocean,remix,original,tall,square:social}[key])(c);c.restore()}
-async function redraw(){if(!S)return;await fonts();const key=$('design').value,d=D[key],cv=$('ticket');cv.width=d[0]*2;cv.height=d[1]*2;$('stage').style.maxWidth=Math.min(d[0],1000)+'px';const c=cv.getContext('2d');c.scale(2,2);draw(c,key);$('layoutName').textContent=$('design').selectedOptions[0].textContent}
-function airport(){const v=$('from').value.trim();if(!v)return '';const a=AIRPORTS.find(a=>a[0].toLowerCase()===v.toLowerCase());return a?a[1]+' ('+a[0]+')':v}
-async function build(){if(busy)return;const token=++epoch;try{const n=new Uint32Array(1);crypto.getRandomValues(n);const r=random(n[0]),cls=$('cls').value,[lo,hi,layout]=CAB[cls],L=layout[Math.floor(r()*layout.length)],seat=(lo+Math.floor(r()*(hi-lo+1)))+L;let code='';const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let i=0;i<6;i++)code+=chars[Math.floor(r()*chars.length)];const name=($('name').value.trim()||'Sample Passenger').toUpperCase(),ref='VC6-'+code,flight='FU '+(100+Math.floor(r()*900)),gate=1+Math.floor(r()*24),q=typeof qrcode==='function'?qrcode(0,'M'):null;if(q){q.addData([ref,name,seat,flight,gate,LABEL[cls]].join('|'));q.make()}if(token!==epoch)return;S={n:n[0],name,ref,flight,gate,layout,L,seat,T:THEMES[cls],cl:LABEL[cls],badge:EDITIONS[$('ed').value][1],pax:(1000+Math.floor(r()*9000)).toLocaleString('en-US'),conn:airport()?'CONNECTING FROM '+airport():'',sinfo:('AF'.includes(L)?'Window':'BE'.includes(L)?'Middle':'Aisle')+' seat · '+('ABC'.includes(L)?'Left':'Right')+' side',qr:q,stamp:$('stampOn').checked};await redraw();$('loading').textContent=q?'':'QR library did not load; ticket export still works.';$('act').hidden=false;board();if(url){$('outwrap').classList.add('stale');$('outmsg').textContent='Previous export — download again to update.'}}catch(e){$('loading').textContent='Could not render: '+e.message}}
-let boardEpoch=0;
-function board(){const token=++boardEpoch,rows=[[S.flight,'LOS SANTOS','00:00',String(S.gate),countdown()],['FU 412','PALM BAY','01:15','8','ON TIME'],['FU 763','SUNSET KEYS','02:30','12','ON TIME']];$('boardRows').replaceChildren();rows.forEach(row=>{const el=document.createElement('div');el.className='brow';row.forEach((v,j)=>{const g=document.createElement('span');g.className='bgrp';for(const ch of v.padEnd([6,13,5,3,10][j])){const i=document.createElement('i');i.textContent=' ';g.append(i);setTimeout(()=>{if(token===boardEpoch)i.textContent=ch},100+Math.random()*900)}el.append(g)});$('boardRows').append(el)});$('board').hidden=false}
-function background(){const cv=$('landscape'),w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,1.5);cv.width=w*d;cv.height=h*d;const c=cv.getContext('2d');c.scale(d,d);let g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#291945');g.addColorStop(.47,'#ad6c91');g.addColorStop(.7,'#f0ae95');g.addColorStop(1,'#302d56');c.fillStyle=g;c.fillRect(0,0,w,h);const x=w*.8,y=h*.38,r=Math.min(w,h)*.16;g=c.createRadialGradient(x,y,0,x,y,r*2.5);g.addColorStop(0,'#ffd5a3aa');g.addColorStop(1,'#ffd5a300');c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='#ffd7b5';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();rect(c,0,h*.7,w,h*.3,'#313350',0);for(let i=0;i<35;i++){c.strokeStyle=`rgba(245,192,186,${.18*(1-i/35)})`;c.beginPath();c.moveTo(0,h*.71+i*h*.009);c.lineTo(w,h*.71+i*h*.009);c.stroke()}palm(c,w*.04,h*1.05,h/340,'#19132f',.92);palm(c,w*.97,h*1.04,h/290,'#19132f',.92);palm(c,w*.9,h*1.05,h/410,'#19132f',.7)}
-function lock(v){busy=v;document.querySelectorAll('input,select,button').forEach(e=>e.disabled=v)}
-async function tear(key){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const d=D[key],cv=$('ticket'),copy=document.createElement('canvas');copy.width=cv.width;copy.height=cv.height;copy.getContext('2d').drawImage(cv,0,0);copy.className='tearc';$('stage').append(copy);const zz=[];for(let i=0;i<=42;i++)zz.push(d[3]?`${i/42*100}% ${d[2]+(i%2?.3:-.3)}%`:`${d[2]+(i%2?.4:-.4)}% ${i/42*100}%`);const left=key==='remix';if(d[3]){const rev=zz.reverse().join(',');cv.style.clipPath=`polygon(0% 0%,100% 0%,${rev})`;copy.style.clipPath=`polygon(0% 100%,100% 100%,${rev})`}else{const a=`polygon(0% 0%,${zz.join(',')},0% 100%)`,b=`polygon(100% 0%,${zz.join(',')},100% 100%)`;cv.style.clipPath=left?b:a;copy.style.clipPath=left?a:b}try{await copy.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${d[3]?0:left?-9:9}%,14%) rotate(${left?-10:6}deg)`,opacity:0}],{duration:950,easing:'ease-in',fill:'forwards'}).finished}finally{copy.remove();cv.style.clipPath=''}}
-function png(c){return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG export failed')),'image/png'))}
-async function present(b,name){const u=URL.createObjectURL(b);$('out').src=u;try{await $('out').decode()}catch{}if(url)URL.revokeObjectURL(url);url=u;$('outwrap').hidden=false;$('outwrap').classList.remove('stale');const a=document.createElement('a');a.href=u;a.download=name;a.textContent='Save PNG';$('outmsg').replaceChildren(document.createTextNode('Ready. '),a,document.createTextNode(' or right-click the image.'));$('outwrap').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>a.click(),800)}
-async function ticketExport(){if(!S||busy)return;lock(true);try{const b=await png($('ticket'));await tear($('design').value);await present(b,S.ref+'.png')}catch(e){$('loading').textContent=e.message}finally{lock(false)}}
-async function wallpaper(){if(!S||busy)return;lock(true);try{await fonts();const [w,h]=$('wsize').value.split('x').map(Number),key=$('design').value,d=D[key],rot=$('wlay').value==='fit'&&d[0]!==d[1]&&((h>w)!==(d[1]>d[0])),tw=rot?d[1]:d[0],th=rot?d[0]:d[1],sc=Math.min(w*.9/tw,h*.85/th),cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');scene(c,w,h,S.T,S.n);c.save();c.translate(w/2,h*.54);c.rotate((rot?Math.PI/2:0)-.02);c.scale(sc,sc);c.translate(-d[0]/2,-d[1]/2);c.save();c.shadowColor='#17061f88';c.shadowBlur=45*sc;c.shadowOffsetY=24*sc;rect(c,0,0,d[0],d[1],S.T[0],22);c.restore();draw(c,key);c.restore();tx(c,'IDEA BY @VINEWOOD_MOTORS · UNOFFICIAL FAN ART',w*.04,h*.98,Math.max(w,h)/120,'#fff',w*.92,500);await present(await png(cv),S.ref+'-wallpaper.png')}catch(e){$('loading').textContent=e.message}finally{lock(false)}}
-$('f').onsubmit=e=>{e.preventDefault();build()};$('design').onchange=()=>{if(!busy)redraw()};$('ed').onchange=()=>{$('cls').value=EDITIONS[$('ed').value][0];build()};['cls','stampOn'].forEach(id=>$(id).onchange=build);$('re').onclick=build;$('dl').onclick=ticketExport;$('wp').onclick=wallpaper;addEventListener('resize',background);background();build();
+const DESIGNS={
+  remix:{W:1000,H:420,draw:drawTicketRemix,tear:{axis:'x',x:23,side:'left'}},
+  tall:{W:520,H:1100,draw:drawTicketTall,tear:{axis:'y',pos:60}},
+  square:{W:640,H:640,draw:drawTicketSquare,tear:{axis:'y',pos:78.125}},
+  original:{W:1000,H:410,draw:drawTicketOriginal,tear:{axis:'x',x:69.85,side:'right'}}
+};
+const curDesign=()=>DESIGNS[$('design').value]||DESIGNS.remix;
+
+/* ===== build ===== */
+let STATE=null,buildToken=0;
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error("image load failed"));i.src=src})}
+function loadFonts(){
+  return Promise.all(["400 16px Oswald","600 16px Oswald","700 16px Oswald","italic 600 16px Oswald","italic 400 16px Oswald","700 16px Poppins","800 16px Poppins"].map(f=>document.fonts.load(f)));
+}
+async function redraw(){
+  if(!STATE)return;
+  const D=curDesign();
+  await loadFonts();
+  const cv=$('ticket'),ctx=cv.getContext('2d');
+  cv.width=D.W*2;cv.height=D.H*2;
+  $('stage').style.maxWidth=Math.min(D.W,1000)+'px';
+  ctx.setTransform(1,0,0,1,0,0);ctx.scale(2,2);
+  D.draw(ctx,STATE,{qr:STATE.qr});
+}
+$('design').onchange=redraw;
+async function build(seedExtra){
+  const my=++buildToken;
+  const name=$('name').value.trim().toUpperCase(), cls=$('cls').value;
+  const ed=$('ed').value, E=EDITIONS[ed], T=THEMES[cls];
+  const h=hash(name+seedExtra), r=rng(h);
+  let code="";for(let i=0;i<6;i++)code+=CH[Math.floor(r()*CH.length)];
+  const ref="VC6-"+code, flight="FU "+(100+Math.floor(r()*900));
+  const [r0,r1,layout]=CAB[cls];
+  const row=r0+Math.floor(r()*(r1-r0+1));
+  const L=layout[Math.floor(r()*layout.length)];
+  const gate=1+Math.floor(r()*24);
+  const pax=(1000+Math.floor(r()*9000)).toLocaleString('en-US');
+  const from=resolveAirport($('from').value);
+  const side="ABC".includes(L)?"Left":"Right";
+  let depLine="",boardLine="";
+  if(SHOW_DEPARTURE){
+    const dep=parseDep();
+    depLine="DEPARTS "+fmtDT(dep);
+    boardLine=`BOARDING ${fmtT(new Date(dep-45*6e4))} · GATE CLOSES ${fmtT(new Date(dep-15*6e4))}`;
+  }
+  const q=(typeof qrcode==='function')?qrcode(0,'M'):null;
+  let qrImg=null;
+  if(q){q.addData(`FLYUS|${ref}|${name}|${flight}|LSX-VCI|${row}${L}|${gate}|${CLASS_LABEL[cls]}|${ed}`);q.make();
+    $('qrtmp').innerHTML=q.createImgTag(6,0);qrImg=await loadImg($('qrtmp').querySelector('img').src)}
+  STATE={T,h,name,cls,cl:CLASS_LABEL[cls],ref,flight,seat:row+L,gate,pax,conn:from?("Connecting from "+from):"",badge:E.badge.toUpperCase(),
+    sinfo:`${seatType(L,layout)} seat · ${side} side`+(E.perk?` · ${E.perk}`:""),
+    arrS:fmtDT(RELEASE),arrDate:fmtD(RELEASE),countdown:countdown(),depLine,boardLine,
+    stamp:$('stampOn').checked,stampSeed:h%997,seatInfo:{layout,r0,r1,row,L},qr:qrImg};
+  await redraw();
+  if(my!==buildToken)return;
+  $('stage').style.display='block';$('act').style.display='flex';
+  if($('outwrap').style.display==='block'){$('outwrap').classList.add('stale');$('outmsg').textContent='Previous export — use Download PNG again for this ticket.'}
+  renderBoard(r,flight,gate);
+}
+$('f').onsubmit=e=>{e.preventDefault();build("")};
+$('re').onclick=()=>build(String(Math.random()));
+
+/* ===== split-flap arrivals board ===== */
+const BCOLS=[6,13,5,3,10],BCH='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
+let boardToken=0;
+function renderBoard(r,flight,gate){
+  const froms=['SUNSET KEYS','NEON HARBOR','PALM BAY','GULF CROSSING','LAKESIDE','CORAL POINT'];
+  const stats=['ON TIME','DELAYED','LANDING','ON TIME','GATE OPEN'];
+  const rows=[[flight,'LOS SANTOS',fmtT(RELEASE),String(gate),countdown()]];
+  const decoys=[];
+  for(let i=0;i<3;i++){
+    const t=new Date(RELEASE.getTime()+Math.floor((r()*480-180)/5)*5*6e4);
+    decoys.push({t,row:['FU '+(100+Math.floor(r()*900)),froms[Math.floor(r()*froms.length)],fmtT(t),String(1+Math.floor(r()*24)),stats[Math.floor(r()*stats.length)]]});
+  }
+  decoys.sort((a,b)=>a.t-b.t).forEach(d=>rows.push(d.row));
+  const el=$('boardRows');
+  const keepH=$('board').offsetHeight;
+  if(keepH)$('board').style.minHeight=keepH+'px';
+  el.innerHTML='';
+  rows.forEach((row,ri)=>{
+    const re=document.createElement('div');re.className='brow'+(ri===0?' mine':'');
+    row.forEach((txt,ci)=>{
+      const g=document.createElement('span');g.className='bgrp';
+      const n=BCOLS[ci],padded=(txt.toUpperCase()+' '.repeat(n)).slice(0,n);
+      for(let k=0;k<n;k++){const c=document.createElement('i');c.textContent=' ';c.dataset.t=padded[k];g.appendChild(c)}
+      re.appendChild(g)});
+    el.appendChild(re)});
+  $('board').style.display='block';
+  const my=++boardToken,cells=[...el.querySelectorAll('i')],start=performance.now();
+  cells.forEach((c,i)=>{c._end=start+350+(i%34)*38+Math.random()*450});
+  (function tick(now){
+    if(my!==boardToken)return;
+    let done=true;
+    cells.forEach(c=>{
+      if(now>=c._end){if(c.textContent!==c.dataset.t){c.textContent=c.dataset.t;c.classList.remove('flap');void c.offsetWidth;c.classList.add('flap')}}
+      else{done=false;if(Math.random()<.5)c.textContent=BCH[Math.floor(Math.random()*BCH.length)]}});
+    if(!done)requestAnimationFrame(tick);else $('board').style.minHeight='';
+  })(performance.now());
+}
+
+/* ===== tear-off animation (stub on the left, the right, or the bottom) ===== */
+function tearAnim(tr){
+  return new Promise(res=>{
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){res();return}
+    const cv=$('ticket'),stage=$('stage'),N=42,horiz=tr.axis==='y',zz=[];
+    for(let i=0;i<=N;i++)zz.push(horiz?`${(i/N*100).toFixed(2)}% ${tr.pos+(i%2?.3:-.3)}%`:`${tr.x+(i%2?.5:-.5)}% ${(i/N*100).toFixed(2)}%`);
+    const c2=document.createElement('canvas');c2.width=cv.width;c2.height=cv.height;c2.getContext('2d').drawImage(cv,0,0);
+    c2.className='tearc';c2.style.transformOrigin=horiz?`50% ${tr.pos}%`:`${tr.x}% 50%`;stage.appendChild(c2);
+    let keep,rip,move;
+    if(horiz){const rv=zz.slice().reverse().join(', ');keep=`polygon(0% 0%, 100% 0%, ${rv})`;rip=`polygon(0% 100%, 100% 100%, ${rv})`;move='translate(0%,12%) rotate(4deg)'}
+    else if(tr.side==='left'){keep=`polygon(100% 0%, ${zz.join(', ')}, 100% 100%)`;rip=`polygon(0% 0%, ${zz.join(', ')}, 0% 100%)`;move='translate(-9%,14%) rotate(-10deg)'}
+    else{keep=`polygon(0% 0%, ${zz.join(', ')}, 0% 100%)`;rip=`polygon(100% 0%, ${zz.join(', ')}, 100% 100%)`;move='translate(9%,14%) rotate(10deg)'}
+    cv.style.clipPath=keep;c2.style.clipPath=rip;
+    c2.style.transition='transform .85s cubic-bezier(.5,0,.9,.4), opacity .85s ease-in';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{c2.style.transform=move;c2.style.opacity='0'}));
+    setTimeout(()=>{c2.remove();cv.style.clipPath='';res()},950);
+  });
+}
+
+/* ===== wallpaper ===== */
+async function renderWallpaper(W,H,lay){
+  if(!STATE)throw new Error("Generate a ticket first");
+  const S=STATE,T=S.T,D=curDesign(),portrait=H>W,ticketPortrait=D.H>D.W,Mx=Math.max(W,H);
+  const rot=(lay==='fit')&&(D.W!==D.H)&&(ticketPortrait!==portrait);
+  const tw=rot?D.H:D.W, th=rot?D.W:D.H, wide=th<tw*.7;
+  const wf=portrait?.9:.92, hf=wide?(portrait?.5:.62):.9;
+  const sc=Math.min(W*wf/tw, H*hf/th);
+  const cx=W/2, cy=H*((wide&&portrait)?.6:.52);
+  await loadFonts();
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d'),u=Mx/1000,ps=Math.min(H/620,W/400);
+  let sign;
+  if(portrait){const sw=W*.72,sh=sw*.27;sign={x:(W-sw)/2,y:H*.72,w:sw,h:sh}}
+  else{const sh=H*.15,sw=sh/.27;sign={x:(W-sw)/2,y:H*.05,w:sw,h:sh}}
+  const slabs=[];const sr=rng(hash(S.ref)+3);
+  for(let i=0;i<4;i++){const w=W*(.1+sr()*.08);slabs.push([W*(.03+i*.25+sr()*.05),w,H*(portrait?.74:.8)-H*(.14+sr()*.2)])}
+  drawScene(ctx,W,H,T,hash(S.ref)+7,{u,sunX:W*(portrait?.64:.7),sunY:H*(portrait?.3:.34),sunR:Mx*.55,clouds:9,base:H*(portrait?.78:.84),cityH:.22,groundH:H*.07,
+    slabs,sign,palms:[[W*.05,H*1.02,ps*1.5,.45],[W*.95,H*1.02,ps*1.8,.45],[W*.3,H*1.02,ps*.9,.35]]});
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(rot?Math.PI/2+1.2*Math.PI/180:-1.2*Math.PI/180);
+  ctx.scale(sc,sc);
+  ctx.translate(-D.W/2,-D.H/2);
+  ctx.save();
+  ctx.shadowColor='rgba(25,5,45,.55)';ctx.shadowBlur=45*sc;ctx.shadowOffsetY=24*sc;
+  rrp(ctx,0,0,D.W,D.H,22);ctx.fillStyle=T.h2;ctx.fill();
+  ctx.restore();
+  D.draw(ctx,S,{qr:S.qr});
+  ctx.restore();
+  const fs=Math.round(Mx/110);
+  ctx.font=`600 ${fs}px Oswald,sans-serif`;ctx.fillStyle='rgba(255,255,255,.75)';ctx.textAlign='center';ctx.textBaseline='middle';
+  if('letterSpacing' in ctx)ctx.letterSpacing=(fs*.12)+'px';
+  ctx.fillText('IDEA BY @VINEWOOD_MOTORS · UNOFFICIAL FAN ART · NOT AFFILIATED WITH ROCKSTAR GAMES OR TAKE-TWO',W/2,H-Mx/55);
+  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('canvas export failed')),'image/png'));
+}
+
+/* ===== buttons (no page jumps: smooth scroll only after the animation finishes) ===== */
+function showMsg(html){$('outmsg').innerHTML=html;$('outwrap').style.display='block'}
+function triggerDownload(url,name){try{const a=document.createElement('a');a.href=url;a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}catch(e){}}
+function smoothScrollTo(el){
+  const y=el.getBoundingClientRect().top+window.scrollY-20;
+  window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+}
+let lastBlobUrl=null;
+function presentExport(blob,name,msg){
+  if(lastBlobUrl)URL.revokeObjectURL(lastBlobUrl);
+  lastBlobUrl=URL.createObjectURL(blob);
+  $('outwrap').classList.remove('stale');
+  $('out').src=lastBlobUrl;
+  showMsg(`${msg} <a href="${lastBlobUrl}" download="${name}">Save PNG</a> (or right-click the image).`);
+  setTimeout(()=>smoothScrollTo($('outwrap')),80);
+  setTimeout(()=>triggerDownload(lastBlobUrl,name),800);
+}
+$('dl').onclick=async()=>{
+  const btn=$('dl');btn.disabled=true;
+  try{
+    const blobP=new Promise((res,rej)=>$('ticket').toBlob(b=>b?res(b):rej(new Error('canvas export failed')),'image/png'));
+    await tearAnim(curDesign().tear);
+    presentExport(await blobP,STATE.ref+'.png','Ticket ready.');
+  }catch(err){showMsg("PNG export failed: "+String(err.message||err).replace(/</g,'&lt;'))}
+  finally{btn.disabled=false}
+};
+$('wp').onclick=async()=>{
+  const btn=$('wp');btn.disabled=true;
+  try{
+    const [W,H]=$('wsize').value.split('x').map(Number);
+    showMsg(`Rendering ${W}×${H} wallpaper…`);
+    const blob=await renderWallpaper(W,H,$('wlay').value);
+    presentExport(blob,`${STATE.ref}-wallpaper-${W}x${H}.png`,`Wallpaper ready (${W}×${H}).`);
+  }catch(err){showMsg("Wallpaper export failed: "+String(err.message||err).replace(/</g,'&lt;'))}
+  finally{btn.disabled=false}
+};
+
+/* Preview controls, ticket resolution, and synthesized paper-rip audio */
+function oceanText(ctx,s,x,y,size,color,weight=700,max=999){ctx.save();ctx.fillStyle=color;ctx.textBaseline='alphabetic';let z=size;do{ctx.font=`${weight} ${z}px Oswald,Arial,sans-serif`;if(ctx.measureText(s).width<=max)break;z--}while(z>10);ctx.fillText(s,x,y);ctx.restore();}
+function drawOcean(ctx,S,A){
+const T=S.T,W=1200,H=460;ctx.save();rrp(ctx,0,0,W,H,22);ctx.clip();drawScene(ctx,W,H,T,hash(S.ref),{u:1,sunX:380,sunY:150,sunR:450,base:380,cityH:.12,groundH:90,clouds:8,palms:[[48,460,1.55,.42],[540,460,.85,.35],[690,460,1.4,.42]]});
+ctx.fillStyle='rgba(255,255,255,.28)';ctx.fillRect(0,260,768,200);for(let i=0;i<7;i++){ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,290+i*19);ctx.bezierCurveTo(220,270+i*19,420,320+i*19,768,285+i*19);ctx.stroke()}
+oceanText(ctx,'flyUS',34,57,36,'#fff');oceanText(ctx,'OCEAN DRIVE / BOARDING COLLECTION',34,86,12,T.tx,600);oceanText(ctx,'VICE',32,191,112,T.tx);oceanText(ctx,'CITY',32,300,112,T.tx);ctx.fillStyle='rgba(255,255,255,.91)';rrp(ctx,34,328,690,94,14);ctx.fill();oceanText(ctx,'PASSENGER',54,350,11,T.ac,500);oceanText(ctx,S.name,54,388,32,T.tx,700,340);oceanText(ctx,'CABIN',430,350,11,T.ac,500);oceanText(ctx,S.cl,430,384,23,T.tx,700,160);oceanText(ctx,'FLIGHT',618,350,11,T.ac,500);oceanText(ctx,S.flight,618,384,23,T.tx,700,90);oceanText(ctx,S.conn||'NONSTOP FROM LOS SANTOS',34,450,12,T.tx,600,680);
+ctx.fillStyle='#fff8ef';ctx.fillRect(768,0,432,H);ctx.fillStyle=T.ac;ctx.fillRect(768,0,432,9);oceanText(ctx,'LSX',798,62,38,T.tx);plane(ctx,925,45,.55,0,T.ac);oceanText(ctx,'VCI',985,62,38,T.tx);oceanText(ctx,'LANDS',798,93,12,T.ac,500);oceanText(ctx,S.arrS,798,126,25,T.tx,700,365);ctx.fillStyle=hexA(T.ac,.12);rrp(ctx,798,145,370,40,10);ctx.fill();oceanText(ctx,S.badge||'SUNSET SERVICE',812,171,18,T.ac,700,340);ctx.fillStyle='#fff';rrp(ctx,798,210,144,144,10);ctx.fill();if(A.qr){ctx.imageSmoothingEnabled=false;ctx.drawImage(A.qr,806,218,128,128);ctx.imageSmoothingEnabled=true}
+oceanText(ctx,'SEAT',967,223,12,T.ac,500);oceanText(ctx,S.seat,967,267,43,T.tx);oceanText(ctx,'GATE',1081,223,12,T.ac,500);oceanText(ctx,String(S.gate),1081,267,43,T.tx);drawSeatMap(ctx,967,286,S,T);oceanText(ctx,S.countdown,967,351,21,T.ac);drawBarcode(ctx,798,376,370,29,S.h,T.tx);oceanText(ctx,S.ref+' / PAX '+S.pax,798,425,13,T.tx);oceanText(ctx,'IDEA: @VINEWOOD_MOTORS / UNOFFICIAL FAN ART',798,447,10,T.tx,400,370);ctx.save();ctx.setLineDash([5,7]);ctx.strokeStyle=T.ac;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(768,12);ctx.lineTo(768,H);ctx.stroke();ctx.restore();if(S.stamp)ctx.drawImage(stampSprite(S,2),596,191,114,114);ctx.restore();
+}
+function drawPageBackground(){const cv=$('landscape'),w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,1.5);cv.width=w*d;cv.height=h*d;const c=cv.getContext('2d');c.scale(d,d);let g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#291945');g.addColorStop(.47,'#ad6c91');g.addColorStop(.7,'#f0ae95');g.addColorStop(1,'#302d56');c.fillStyle=g;c.fillRect(0,0,w,h);const x=w*.8,y=h*.38,r=Math.min(w,h)*.16;g=c.createRadialGradient(x,y,0,x,y,r*2.5);g.addColorStop(0,'#ffd5a3aa');g.addColorStop(1,'#ffd5a300');c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='#ffd7b5';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.fillStyle='#313350';c.fillRect(0,h*.7,w,h*.3);for(let i=0;i<35;i++){c.strokeStyle=`rgba(245,192,186,${.18*(1-i/35)})`;c.beginPath();c.moveTo(0,h*.71+i*h*.009);c.lineTo(w,h*.71+i*h*.009);c.stroke()}palm(c,w*.04,h*1.05,h/340,'#19132f',.92);palm(c,w*.97,h*1.04,h/290,'#19132f',.92);palm(c,w*.9,h*1.05,h/410,'#19132f',.7);const rnd=rng(42);c.fillStyle='#30203f';for(let bx=0;bx<w;bx+=30){const bh=10+rnd()*h*.06;c.fillRect(bx,h*.7-bh,23,bh)}}
+DESIGNS.ocean={W:1200,H:460,draw:drawOcean,tear:{axis:'x',x:64,side:'right'}};
+function updateLayoutSelection(){const key=$('design').value;document.querySelectorAll('.layout-choice').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.layout===key)));$('layoutName').textContent=$('design').selectedOptions[0].textContent;updateExportOptions();}
+function drawLayoutThumbnails(){if(!STATE)return;document.querySelectorAll('.layout-choice').forEach(button=>{const cv=button.querySelector('canvas'),D=DESIGNS[button.dataset.layout],box=cv.getBoundingClientRect(),w=Math.max(80,box.width),h=Math.max(70,box.height),d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);const ctx=cv.getContext('2d');ctx.scale(d,d);const scale=Math.min((w-16)/D.W,(h-16)/D.H);ctx.translate((w-D.W*scale)/2,(h-D.H*scale)/2);ctx.scale(scale,scale);D.draw(ctx,STATE,{qr:STATE.qr});});updateLayoutSelection();}
+function updateExportOptions(){const D=curDesign();for(const option of $('ticketScale').options){const scale=Number(option.value);option.textContent=`${scale}× — ${D.W*scale} × ${D.H*scale} px`;}const scale=Number($('ticketScale').value);$('exportDimensions').textContent=`Ticket PNG: ${D.W*scale} × ${D.H*scale} pixels. Wallpaper size is separate.`;}
+$('ticketScale').onchange=updateExportOptions;
+let audioContext=null;
+async function prepareRipAudio(){if(!$('ripSoundOn').checked)return false;try{const AudioClass=window.AudioContext||window.webkitAudioContext;if(!AudioClass)return false;if(!audioContext||audioContext.state==='closed')audioContext=new AudioClass();if(audioContext.state==='suspended')await audioContext.resume();return audioContext.state==='running';}catch(e){return false;}}
+function playPaperRip(){
+if(!$('ripSoundOn').checked||!audioContext||audioContext.state!=='running')return false;
+try{const ac=audioContext,duration=.84,samples=Math.ceil(ac.sampleRate*duration),buffer=ac.createBuffer(1,samples,ac.sampleRate),data=buffer.getChannelData(0);
+let drift=0;for(let i=0;i<samples;i++){const t=i/ac.sampleRate;drift=drift*.84+(Math.random()*2-1)*.16;const flutter=.35+.65*Math.pow(Math.abs(Math.sin(t*93+Math.sin(t*31)*1.8)),3);const crackle=Math.random()<.008?(Math.random()*2-1)*.85:0;data[i]=((Math.random()*2-1)*.62+drift*.8)*flutter+crackle;}
+const noise=ac.createBufferSource(),high=ac.createBiquadFilter(),low=ac.createBiquadFilter(),gain=ac.createGain();noise.buffer=buffer;high.type='highpass';high.frequency.value=400;low.type='lowpass';low.frequency.value=6500;noise.connect(high);high.connect(low);low.connect(gain);gain.connect(ac.destination);
+const start=ac.currentTime+.008;gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.32,start+.035);gain.gain.linearRampToValueAtTime(.2,start+.25);gain.gain.linearRampToValueAtTime(.3,start+.62);gain.gain.exponentialRampToValueAtTime(.001,start+duration);noise.start(start);noise.stop(start+duration);noise.onended=()=>{noise.disconnect();high.disconnect();low.disconnect();gain.disconnect();};return true;}catch(e){return false;}}
+let exporting=false;
+function lockExportControls(){const controls=[...document.querySelectorAll('input,select,button')],states=controls.map(control=>control.disabled);controls.forEach(control=>control.disabled=true);return()=>controls.forEach((control,i)=>control.disabled=states[i]);}
+$('dl').onclick=async()=>{
+if(!STATE||exporting)return;exporting=true;
+const soundRequested=$('ripSoundOn').checked,audioReady=prepareRipAudio(),D=curDesign(),S=STATE,scale=Number($('ticketScale').value),unlock=lockExportControls();
+try{
+$('exportStatus').textContent='Rendering ticket PNG…';await loadFonts();
+const cv=document.createElement('canvas');cv.width=D.W*scale;cv.height=D.H*scale;const ctx=cv.getContext('2d');ctx.scale(scale,scale);D.draw(ctx,S,{qr:S.qr});
+const blob=await new Promise((resolve,reject)=>cv.toBlob(b=>b?resolve(b):reject(new Error('PNG export failed')),'image/png'));
+await audioReady;const played=playPaperRip();$('exportStatus').textContent='Tearing off your ticket…';await tearAnim(D.tear);
+presentExport(blob,`${S.ref}-${cv.width}x${cv.height}.png`,`Ticket ready (${cv.width}×${cv.height}).`);
+$('exportStatus').textContent=`Saved at ${cv.width} × ${cv.height} px.`+(soundRequested&&!played?' Sound unavailable in this browser; PNG export is unaffected.':'');
+}catch(e){$('exportStatus').textContent='Ticket export failed: '+(e.message||e);}finally{unlock();exporting=false;}
+};
+$('ripSoundOn').onchange=()=>{if(!$('ripSoundOn').checked&&audioContext&&audioContext.state==='running')audioContext.suspend().catch(()=>{});};
+const baseBuild=build;
+build=async function(seed){try{await baseBuild(seed);drawLayoutThumbnails();$('loading').textContent=typeof qrcode==='function'?'':'QR library unavailable. Connect to the internet and reload to include QR codes.';}catch(e){$('loading').textContent='Could not render: '+e.message;throw e;}};
+$('design').onchange=async()=>{await redraw();updateLayoutSelection();};document.querySelectorAll('.layout-choice').forEach(button=>button.addEventListener('click',async()=>{$('design').value=button.dataset.layout;await redraw();updateLayoutSelection();}));
+$('ed').onchange=()=>{$('cls').value=EDITIONS[$('ed').value].cls;build('');};['cls','stampOn'].forEach(id=>$(id).addEventListener('change',()=>build('')));
+window.addEventListener('resize',()=>{drawPageBackground();drawLayoutThumbnails();});drawPageBackground();updateExportOptions();build('').catch(()=>{});
